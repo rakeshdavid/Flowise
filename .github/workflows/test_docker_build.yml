@@ -1,13 +1,12 @@
 name: Test Docker Build
 
 on:
-    push:
-        branches:
-            - main
-
-    pull_request:
-        branches:
-            - '*'
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0'
 
 jobs:
     build:
@@ -16,5 +15,22 @@ jobs:
             PUPPETEER_SKIP_DOWNLOAD: true
         steps:
             - uses: actions/checkout@v3
-
+            
             - run: docker build --no-cache -t flowise .
+
+            - name: Save AppMaps
+              uses: actions/cache@v3
+              if: always()
+              with:
+                path: ./tmp/appmap
+                key: appmaps-${{ github.sha }}-${{ github.run_attempt }}
+
+    appmap-analysis:
+      if: always()
+      needs: [ build ]
+      uses: getappmap/analyze-action/.github/workflows/appmap-analysis.yml@v1
+      permissions:
+        actions: read
+        contents: read
+        checks: write
+        pull-requests: write
